@@ -7,7 +7,7 @@ import { HttpClient } from '@angular/common/http';
 export class HeatControlService {
 
   constructor(private httpClient: HttpClient) { }
-  HEAT_CONTROLLER_ENDPOINT: string = "http://192.168.1.8";
+  HEAT_CONTROLLER_ENDPOINT: string = "http://192.168.1.10";
 
   public Fan1(status) {
 
@@ -26,6 +26,11 @@ export class HeatControlService {
 
   public ReadTemp() {
     return this.httpClient.get(this.HEAT_CONTROLLER_ENDPOINT + "/temp");
+  }
+
+
+  public ControlVarFan(Speed) {
+    return this.httpClient.get(this.HEAT_CONTROLLER_ENDPOINT + "/analog?command=m"+Speed);
   }
 
 }

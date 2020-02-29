@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { DoCheck, KeyValueDiffers, KeyValueDiffer, Component, OnDestroy } from '@angular/core';
 import { NbThemeService } from '@nebular/theme';
 import { Temperature, TemperatureHumidityData } from '../../../@core/data/temperature-humidity';
 import { takeWhile } from 'rxjs/operators';
@@ -14,12 +14,13 @@ import 'rxjs/add/observable/interval';
 export class TemperatureComponent implements OnDestroy {
 
   private alive = true;
-
+  differ: KeyValueDiffer<string, any>;
   temperatureData: Temperature;
-  temperature: number;
+  temperature: number=0;
+  speed: number=0;
   temperatureOff = false;
   temperatureMode = 'cool';
-
+  
   humidityData: Temperature;
   humidity: number;
   humidityOff = false;
@@ -28,40 +29,66 @@ export class TemperatureComponent implements OnDestroy {
   theme: any;
   themeSubscription: any;
 
-  constructor(private themeService: NbThemeService, private cont: HeatControlService,
+  
+  constructor(private differs: KeyValueDiffers,private themeService: NbThemeService, private cont: HeatControlService,
               private temperatureHumidityService: TemperatureHumidityData) {
+    this.differ = this.differs.find({}).create();
+
     this.themeService.getJsTheme()
       .pipe(takeWhile(() => this.alive))
       .subscribe(config => {
       this.theme = config.variables.temperature;
+     
     });
    
-    forkJoin(
-      this.temperatureHumidityService.getTemperatureData(),
-      this.temperatureHumidityService.getHumidityData(),
-    )
-      .subscribe(([temperatureData, humidityData]: [Temperature, Temperature]) => {
-        debugger;
-        this.temperatureData = temperatureData;
-        this.temperature = this.temperatureData.value;
+    
 
-        this.humidityData = humidityData;
-        this.humidity = this.humidityData.value;
-      });
-    cont.ReadTemp().subscribe(res => {
-      this.temperature = (res as any).Temprature;
-    });
+    // forkJoin(
+    //   this.temperatureHumidityService.getTemperatureData(),
+    //   this.temperatureHumidityService.getHumidityData(),
+    // )
+    //   .subscribe(([temperatureData, humidityData]: [Temperature, Temperature]) => {
+    //     debugger;
+    //     this.temperatureData = temperatureData;
+    //     //this.temperature = this.temperatureData.value;
+    //     alert(this.temperature);
+    //     this.humidityData = humidityData;
+    //     this.humidity = this.humidityData.value;
+    //   });
+    // cont.ReadTemp().subscribe(res => {
+    //   this.temperature = (res as any).Temprature;
+    // });
 
-    var sub = Observable.interval(3000)
-      .subscribe((val) => {
-        cont.ReadTemp().subscribe(res => {
-          this.temperature = (res as any).Temprature;
-        }); });
+    // var sub = Observable.interval(3000)
+    //   .subscribe((val) => {
+    //     cont.ReadTemp().subscribe(res => {
+    //       this.temperature = (res as any).Temprature;
+    //     }); });
   }
 
-  power()
+  ngDoCheck() {
+    const change = this.differ.diff(this);
+    if (change) {
+      change.forEachChangedItem(item => {
+        var cur_speed = Math.round(item.currentValue);
+        if(cur_speed<=10)
+        {
+          cur_speed=0;
+        }
+        this.cont.ControlVarFan(cur_speed).subscribe((res) => { });
+        console.log('item changed', item);
+      });
+    }
+  }
+  
+  changeSpeed()
   {
    
+  //  alert("ok  ok ");
+  }
+  power(val)
+  {
+   alert(val);
   }
   ngOnDestroy() {
     this.alive = false;
